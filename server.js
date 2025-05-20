@@ -38,7 +38,7 @@ app.use(cookieParser());
 // Enable CORS - properly configured for credentials
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'https://dms-frontend-mu.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -60,6 +60,11 @@ app.use('/api/patient', patientRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/receptionist', receptionistRoutes);
+
+// Add a health check route
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
 
 // Serve static folder in production
 if (process.env.NODE_ENV === 'production') {
@@ -94,20 +99,24 @@ const connectDB = async () => {
     
     console.log(`MongoDB connected: ${mongoose.connection.host}`);
     
-    // Start the server after successful DB connection
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-    });
+    // Start the server when not in serverless environment
+    if (process.env.NODE_ENV !== 'vercel') {
+      const PORT = process.env.PORT || 5000;
+      app.listen(PORT, () => {
+        console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+      });
+    }
   } catch (err) {
     console.error('MongoDB connection error:', err.message);
     console.log('Continuing without database - some features will be limited');
     
-    // Start server anyway - for development/testing purposes
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT} (WITHOUT DATABASE)`);
-    });
+    // Start server when not in serverless environment
+    if (process.env.NODE_ENV !== 'vercel') {
+      const PORT = process.env.PORT || 5000;
+      app.listen(PORT, () => {
+        console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT} (WITHOUT DATABASE)`);
+      });
+    }
   }
 };
 
@@ -119,4 +128,7 @@ process.on('unhandledRejection', (err, promise) => {
   console.error(`Error: ${err.message}`);
   // Close server & exit process
   // server.close(() => process.exit(1));
-}); 
+});
+
+// Export the Express app for serverless use
+module.exports = app; 
