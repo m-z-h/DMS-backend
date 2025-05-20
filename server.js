@@ -61,6 +61,11 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/receptionist', receptionistRoutes);
 
+
+
+app.get('/', (req, res) => {
+  res.send("welcome");
+});
 // Add a health check route
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
